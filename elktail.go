@@ -9,7 +9,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/net/context"
 	"gopkg.in/olivere/elastic.v5"
@@ -21,9 +21,7 @@ import (
 	"time"
 )
 
-//
 // Tail is a structure that holds data necessary to perform tailing.
-//
 type Tail struct {
 	client          *elastic.Client  //elastic search client that we'll use to contact EL
 	queryDefinition *QueryDefinition //structure containing query definition and formatting
@@ -58,12 +56,12 @@ func NewTail(configuration *Configuration) *Tail {
 	var url = configuration.SearchTarget.Url
 	if !strings.HasPrefix(url, "http") {
 		url = "http://" + url
-		Trace.Printf("Adding http:// prefix to given url. Url: " + url)
+		Trace.Printf("Adding http:// prefix to given url. Url: %s", url)
 	}
 
 	if !Must(regexp.MatchString(".*:\\d+", url)) && Must(regexp.MatchString("http://[^/]+$", url)) {
 		url += ":9200"
-		Trace.Printf("No port was specified, adding default port 9200 to given url. Url: " + url)
+		Trace.Printf("No port was specified, adding default port 9200 to given url. Url: %s", url)
 	}
 
 	//if a tunnel is successfully created, we need to connect to tunnel url (which is localhost on tunnel port)
@@ -74,6 +72,7 @@ func NewTail(configuration *Configuration) *Tail {
 	defaultOptions := []elastic.ClientOptionFunc{
 		elastic.SetURL(url),
 		elastic.SetSniff(false),
+		elastic.SetDecoder(newES7CompatibleDecoder()),
 		elastic.SetHealthcheckTimeoutStartup(10 * time.Second),
 		elastic.SetHealthcheckTimeout(2 * time.Second),
 	}
@@ -289,8 +288,8 @@ func (tail *Tail) buildSearchQuery() elastic.Query {
 	return query
 }
 
-//Builds range filter on timestamp field. You should only call this if start or end date times are defined
-//in query definition
+// Builds range filter on timestamp field. You should only call this if start or end date times are defined
+// in query definition
 func (tail *Tail) buildDateTimeRangeQuery() *elastic.RangeQuery {
 	filter := elastic.NewRangeQuery(tail.queryDefinition.TimestampField)
 	if tail.queryDefinition.AfterDateTime != "" {

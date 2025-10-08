@@ -5,17 +5,18 @@
  */
 
 package main
+
 import (
-	"runtime"
-	"os"
 	"encoding/json"
+	"github.com/urfave/cli"
 	"io/ioutil"
-	"github.com/codegangsta/cli"
+	"os"
+	"runtime"
 )
 
 type SearchTarget struct {
 	Url          string
-	TunnelUrl	 string	`json:"-"`
+	TunnelUrl    string `json:"-"`
 	IndexPattern string
 }
 
@@ -23,31 +24,29 @@ type QueryDefinition struct {
 	Terms          []string
 	Format         string
 	TimestampField string
-	AfterDateTime  string  `json:"-"`
-	BeforeDateTime string  `json:"-"`
+	AfterDateTime  string `json:"-"`
+	BeforeDateTime string `json:"-"`
 }
 
 type Configuration struct {
 	SearchTarget    SearchTarget
 	QueryDefinition QueryDefinition
 	InitialEntries  int
-	ListOnly        bool	`json:"-"`
+	ListOnly        bool `json:"-"`
 	User            string
-	Password        string  `json:"-"`
-	Verbose         bool	`json:"-"`
-	MoreVerbose     bool	`json:"-"`
-	TraceRequests   bool	`json:"-"`
+	Password        string `json:"-"`
+	Verbose         bool   `json:"-"`
+	MoreVerbose     bool   `json:"-"`
+	TraceRequests   bool   `json:"-"`
 	SSHTunnelParams string
-	SaveQuery		bool	`json:"-"`
+	SaveQuery       bool `json:"-"`
 }
 
 var confDir = ".elktail"
 var defaultConfFile = "default.json"
 
-//When changing this array, make sure to also make appropriate changes in CopyConfigRelevantSettingsTo
+// When changing this array, make sure to also make appropriate changes in CopyConfigRelevantSettingsTo
 var configRelevantFlags = []string{"url", "f", "i", "t", "u", "ssh"}
-
-
 
 func userHomeDir() string {
 	if runtime.GOOS == "windows" {
@@ -69,7 +68,7 @@ func (c *Configuration) Copy() *Configuration {
 	return result
 }
 
-//When making change here make sure configRelevantFlags global var is also changed
+// When making change here make sure configRelevantFlags global var is also changed
 func (c *Configuration) CopyConfigRelevantSettingsTo(dest *Configuration) {
 	//copy config relevant configuration settings
 	dest.SearchTarget.TunnelUrl = c.SearchTarget.TunnelUrl
@@ -95,58 +94,59 @@ func (c *Configuration) CopyNonConfigRelevantSettingsTo(dest *Configuration) {
 	dest.TraceRequests = c.TraceRequests
 }
 
-
-
 func (c *Configuration) SaveDefault() {
-	confDirPath := userHomeDir() + string(os.PathSeparator) + confDir;
+	confDirPath := userHomeDir() + string(os.PathSeparator) + confDir
 	if _, err := os.Stat(confDirPath); os.IsNotExist(err) {
 		//conf directory doesn't exist, let's create it
 		err := os.Mkdir(confDirPath, 0700)
-		if (err != nil) {
+		if err != nil {
 			Error.Printf("Failed to create configuration directory %s, %s\n", confDirPath, err)
 			return
 		}
 	}
 	confJson, err := json.MarshalIndent(c, "", "  ")
-	if (err != nil) {
+	if err != nil {
 		Error.Printf("Failed to marshall configuration to json: %s.\n", err)
 		return
 	}
-	confFile := confDirPath + string(os.PathSeparator) + defaultConfFile;
+	confFile := confDirPath + string(os.PathSeparator) + defaultConfFile
 	err = ioutil.WriteFile(confFile, confJson, 0700)
-	if (err != nil) {
+	if err != nil {
 		Error.Printf("Failed to save configuration to file %s, %s\n", confFile, err)
 		return
 	}
 }
 
-func LoadDefault() (conf *Configuration, err error)  {
-	confDirPath := userHomeDir() + string(os.PathSeparator) + confDir;
+func LoadDefault() (conf *Configuration, err error) {
+	confDirPath := userHomeDir() + string(os.PathSeparator) + confDir
 	if _, err := os.Stat(confDirPath); os.IsNotExist(err) {
 		//conf directory doesn't exist, let's create it
 		err := os.Mkdir(confDirPath, 0700)
-		if (err != nil) {
+		if err != nil {
 			return nil, err
 		}
 	}
-	confFile := confDirPath + string(os.PathSeparator) + defaultConfFile;
+	confFile := confDirPath + string(os.PathSeparator) + defaultConfFile
 	var config *Configuration
 	confBytes, err := ioutil.ReadFile(confFile)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	err = json.Unmarshal(confBytes, &config)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	return config, nil
 }
 
-
 func (config *Configuration) Flags() []cli.Flag {
-	cli.VersionFlag.Usage = "Print the version"
-	cli.HelpFlag.Usage = "Show help"
-	return []cli.Flag {
+	if versionFlag, ok := cli.VersionFlag.(*cli.BoolFlag); ok {
+		versionFlag.Usage = "Print the version"
+	}
+	if helpFlag, ok := cli.HelpFlag.(*cli.BoolFlag); ok {
+		helpFlag.Usage = "Show help"
+	}
+	return []cli.Flag{
 		cli.StringFlag{
 			Name:        "url",
 			Value:       "http://127.0.0.1:9200",
@@ -231,7 +231,7 @@ func (config *Configuration) Flags() []cli.Flag {
 	}
 }
 
-//Elktail will work in list-only (no follow) mode if appropriate flag is set or if query has date-time filtering enabled
+// Elktail will work in list-only (no follow) mode if appropriate flag is set or if query has date-time filtering enabled
 func (c *Configuration) IsListOnly() bool {
 	return c.ListOnly || c.QueryDefinition.IsDateTimeFiltered()
 }
@@ -248,4 +248,3 @@ func IsConfigRelevantFlagSet(c *cli.Context) bool {
 	}
 	return false
 }
-
