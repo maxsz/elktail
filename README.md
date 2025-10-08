@@ -23,22 +23,10 @@ Elktail major versions follow ElasticSearch versions. Here's the table indicatin
 
 Elktail is written in Go language, and if you have [Go installed](https://golang.org/doc/install#install), you can just type in:
 
-`go get github.com/knes1/elktail`
+`go install github.com/maxsz/elktail@latest`
 
 This will automatically download, compile and install the latest version of the app.
 After that you should have `elktail` executable in your `$GOPATH/bin`.
-
-#### Install Using Hombrew (OS/X)
-
-To install `elktail` using homebrew packet manager type in the following in the Terminal:
-
-`brew tap knes1/tap`
-
-`brew install elktail`
-
-#### Download Binary
-
-You can also download the executable binary from the [releases page](https://github.com/knes1/elktail/releases).
 
 # Basic Usage
 
